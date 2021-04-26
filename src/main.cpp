@@ -40,23 +40,13 @@
             GPIO21 : SDA
             GPIO22 : SCL
 **/
-
-#include <Keypad.h> //TEMPORAIRE
 #include <string>
 #include <iostream>
 
-const byte KEYROWS = 4; //four rows
-const byte KEYCOLS = 4; //four columns
- 
-//definition of the buttons on the keypad
-char keypadHexaKeys[KEYROWS][KEYCOLS] = {{'1','2','3','A'},{'4','5','6','B'},{'7','8','9','C'},{'*','0','#','D'}};
- 
-byte keyRowPins[KEYROWS] = {13, 12, 14, 27}; //pins used for keypad rows
-byte keyColPins[KEYCOLS] = {26, 25, 33, 32}; //pins used for keypad columns
- 
-//initialize an instance of class NewKeypad
-Keypad myKeypad = Keypad( makeKeymap(keypadHexaKeys), keyRowPins, keyColPins, KEYROWS, KEYCOLS);
-char enter = 35;
+//Classe MyKeypad
+#include <MyKeypad.h>
+MyKeypad *myKeypad = NULL;
+char enter = 35; //Indicate wich caracter is the enter button on the keypad
 
 //Classe MyLeds
 #include <MyLeds.h> 
@@ -96,9 +86,9 @@ void ouverturePorteReussi(int delais, int delaisFinal, int luminosite){
         myOled->DisplayWorkingScreen("Porte", "Code correct");
         delay(1000);
         myOled->DisplayWorkingScreen("Porte", "Ouverture en cours...");
-        myLeds->afficherLedsAccepte(delais, delaisFinal, luminosite);
-        myLeds->black();
-        myOled->clearDisplay();
+        myLeds->afficherLedsAccepte(delais, delaisFinal, luminosite); //Démarre une séquence de couleurs de leds
+        myLeds->black(); //Éteint les leds
+        myOled->clearDisplay(); //Vide le contenu de l'écran
         myOled->DisplayInitialisationSystem("Porte Verrouillee");
 }
 
@@ -110,17 +100,17 @@ void ouverturePorteReussi(int delais, int delaisFinal, int luminosite){
  */
 void passCheck(){
   if(passBuffer[0] == inputBuffer[0] && passBuffer[1] == inputBuffer[1] && passBuffer[2] == inputBuffer[2] && passBuffer[3] == inputBuffer[3]){
-    ouverturePorteReussi(600, 1600, 10);
+    ouverturePorteReussi(600, 1600, 10); 
+    myKeypad->resetInputBuffer(inputBuffer); //Sers à modifier le contenu du input buffer pour ne pas pouvoir simplement cliquer sur enter pour déverrouiler la porte sans rerentrer le mot de passe
     changePassword = true; //Rend le changement de mot de passe possible
     i=0;  //Remet le compteur à 0
-    inputBuffer[3] = _NULL; //Remet le le dernier input du buffer a null 
   }
   else{
     myLeds->afficherLedsRefuse(600, 1600, 10);
-    changePassword = false; //Rend le changement de mot de passe possible
-    i=0; //Remet le compteur à 0
+    myKeypad->resetInputBuffer(inputBuffer); //Sers à modifier le contenu du input buffer pour ne pas pouvoir simplement cliquer sur enter pour déverrouiler la porte sans rerentrer le mot de passe
+    changePassword = false; //Rend le changement de mot de passe impossible
     myOled->DisplayInitialisationSystem("Porte Verrouillee");
-    inputBuffer[3] = _NULL; //Remet le le dernier input du buffer a null
+    i=0;  //Remet le compteur à 0
   }
 }
 
@@ -132,18 +122,16 @@ void passCheck(){
  */
 void passChange(){
   myOled->DisplayWorkingScreen("Mot de passe", "Changement du mot de passe en cours...");
-  delay(1000);
-  passBuffer[0] = inputBuffer[0]; //Copie le contenu de inputBuffer dans passBuffer
-  passBuffer[1] = inputBuffer[1];
-  passBuffer[2] = inputBuffer[2];
-  passBuffer[3] = inputBuffer[3];
+  delay(1000); //En ms
+  myKeypad->changePassword(passBuffer, inputBuffer); //Modifie le mot de passe
   changePassword = false; //Désactive la possibilité de changer le mot de passe
   i=0; //Remet le compteur à 0
-  myOled->clearDisplay();
+  myOled->clearDisplay(); //Vide l'écran
   myOled->DisplayInitialisationSystem("Porte Verrouillee");
 }
 
 void setup(){
+  myKeypad = new MyKeypad();
   myLeds = new MyLeds(NOMBRE_LEDS, PIN, TYPE);
   myLeds->begin();
   myLeds->black(); //Éteint les leds
@@ -153,10 +141,10 @@ void setup(){
 }
  
 void loop(){
-  char customKey = myKeypad.getKey(); //Prend la touche qui a été appuyée et la stocke dedans
+  char customKey = myKeypad->getKey(); //Prend la touche qui a été appuyée et la stocke dedans
   //En appuyant sur la touche enter, on vérifie si le mot de passe entré est bon
   if(enter == customKey && inputBuffer[0] != _NULL){
-    passCheck();
+    passCheck(); //Appelle la fonction qui vérifie si le mot de passe est bon
   }
   //Enregistre les caractères entrés par l'utilisateur dans le inputBuffer chaque fois qu'une touce est enfoncée
   if(customKey != enter && customKey != '\0' && i < 4){
@@ -166,6 +154,6 @@ void loop(){
   }
   //En ayant changePassword a true (Activé) et si le bouton qui a été appuyé est celui choisis pour changer le mot de passe  (*), le mot de passe sera changé par celui entré avant d'appuyer sur *
   if(changePassword && customKey == passChangeCode){          
-        passChange();
+        passChange(); //Appelle la fonction qui change le mot de passe
   }
 }

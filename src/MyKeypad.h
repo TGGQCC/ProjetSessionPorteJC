@@ -26,8 +26,8 @@
             GPIO32 : Column 4
     Exemple d'utilisation (ainsi que toutes les commandes héritées de la Librarie Adafruit)
         #include "MyKeypad.h"
-        MyKeypad *myKeypad = new MyKeypad(makeKeymap(hexakeyss), rowPins, colPins, ROW, COL);
-
+        myKeypad = new MyKeypad();
+        char customKey = myKeypad->getKey(); //Prend la touche qui a été appuyée et la stocke dedans
 
 **/
 
@@ -37,20 +37,30 @@
 #include "Keypad.h"
 const byte COLS = 4; //Number of columns
 const byte ROWS = 4; //Number of rows
-char hexaKeys[ROWS][COLS] = {{'1','2','3','A'},{'4','5','6','B'},{'7','8','9','C'},{'*','0','#','D'}}; //Definition of the symbols on the keypad
-byte rowsPins[ROWS] = {13, 12, 14, 27}; //Pins used for the keypad rows
-byte colsPins[COLS] = {26, 25, 33, 32}; //Pins used for the keypad columns
+
+
 
 //Pour la gestion du Keypad
 //lib_deps = Mark Stanley Keypad @ ^3.1.1
 class MyKeypad : public Keypad {
 public:
+    MyKeypad() : Keypad(makeKeymap(hexaKeys), rowPins, colPins, ROWS, COLS){ };
+    void changePassword(char *passBuffer, char *inputBuffer); //change le mot de passe pour celui choisis par l'utilisateur
+    void resetInputBuffer(char *inputBuffer); //Sers à modifier le contenu du input buffer pour ne pas pouvoir simplement cliquer sur enter pour déverrouiler la porte sans rerentrer le mot de passe
 
-    MyKeypad(char hexakeyss[ROWS][COLS] = hexaKeys, byte rowPins[ROWS] = rowsPins, byte colPins[COLS] = colsPins, byte ROW = ROWS, byte COL= COLS) : Keypad(makeKeymap(hexakeyss), rowPins, colPins, ROW, COL){ };
-    char showKey(MyKeypad aKeypad); //TEST      
-    
+
 private:
     String lastError; //Garde la dernière erreur connue
-    
+    //Definition of the symbols on the keypad
+    char hexaKeys[ROWS][COLS] = {
+    {'1','2','3','A'},
+    {'4','5','6','B'},
+    {'7','8','9','C'},
+    {'*','0','#','D'}
+    }; 
+
+    byte rowPins[ROWS] = {13, 12, 14, 27}; //pins used for keypad rows
+    byte colPins[COLS] = {26, 25, 33, 32}; //pins used for keypad columns
+
 };
 #endif
